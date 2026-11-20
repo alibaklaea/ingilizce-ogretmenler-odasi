@@ -23,11 +23,13 @@ Açmak: `index.html` (öğretmen/tahta) ve `ogrenci.html` (öğrenci) — çift 
 
 | Modül | Durum | Not |
 |---|---|---|
-| Bugün paneli (haftayı tarihten bulur) | ✅ | tema, aşama, belirli günler, kelimeler, kalıp, sohbet, oyunlar |
+| Haftalar ana sayfası (ay ay hafta kartları) + her sayfada hafta çubuğu | ✅ | seçilen hafta Bu Hafta, günlük plan, tahta, sınav sayfalarına geçer |
+| Bu Hafta paneli | ✅ | tema, aşama, belirli günler, kelimeler, kalıp, sohbet, oyunlar |
 | Yıllık plan (MEB, 37 hafta) | ✅ | yazdır + Word |
 | Haftalık plan | ✅ | 5 etkinlik, çıktılar, performans görevi, farklılaştırma, dış kaynaklar |
 | Günlük plan (ders saati kadar, 40 dk) | ✅ | MEB tablo biçimi, düzenlenebilir, Word |
 | Ünite ayrıntısı (MEB resmî + Claude) | ✅ | |
+| 116 ünite oyunu (her ünitede Yerleştir/Sırala + Bilmece; 2-3. sınıfta sesli dinle-dokun) | ✅ | kız/erkek karakter seçimi; js/unite-oyun-*.js |
 | 12 tahta oyunu + düellolar | ✅ | kayıt Raporlar'a düşer |
 | Konuşma sınavı provası (sesli soru, 30 sn, yazıya dökme, 4 ölçütlü puan) | ✅ | Chrome/Edge mikrofon; yoksa öğretmen puanı. Soru kartları + puanlama formu baskısı |
 | A4 etkinlik kâğıdı (cevaplı) | ✅ | her ünite, her basışta farklı |
