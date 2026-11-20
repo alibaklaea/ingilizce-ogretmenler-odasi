@@ -329,6 +329,91 @@
     soru();
   };
 
+  /* ---------- Ünite oyunları: karakter seçimi + Yerleştir / Sırala / Bilmece ---------- */
+  const KARAKTERLER = [{ e: '👧🏻', ad: 'Girl' }, { e: '👧🏽', ad: 'Girl' }, { e: '👦🏻', ad: 'Boy' }, { e: '👦🏽', ad: 'Boy' }];
+  const OVGU = ['Great job!', 'Well done!', 'Super!', 'Excellent!', 'Fantastic!', 'You got it!'];
+  G.karakterSec = (kok, ctx, devam) => {
+    if (ctx.karakter) return devam(ctx.karakter);
+    h(kok, `<div class="karakter-sec"><h2>${esc(ctx.uo.ikon)} ${esc(ctx.uo.ad)}</h2><p class="soluk">Karakterini seç! · Choose your player!</p>
+      <div class="kar-liste">${KARAKTERLER.map((k, i) => `<button class="kar" data-k="${i}"><span class="emo">${k.e}</span><b>${k.ad === 'Girl' ? 'Kız' : 'Erkek'}</b></button>`).join('')}</div></div>`);
+    kok.querySelectorAll('[data-k]').forEach(b => b.onclick = () => { const k = KARAKTERLER[+b.dataset.k]; O.ayarYaz('karakter', +b.dataset.k); ctx.karakter = k; devam(k); });
+  };
+  const yanPanel = (k) => `<div class="kar-panel"><div class="kar-balon">Let's play! 😊</div><span class="emo kar-buyuk">${k.e}</span></div>`;
+  const tepki = (kok, dogru) => { const p = kok.querySelector('.kar-panel'); if (!p) return; const b = p.querySelector('.kar-balon'), e = p.querySelector('.kar-buyuk');
+    b.textContent = dogru ? O.sec(OVGU, 1)[0] + ' 🎉' : 'Try again! 💪'; e.classList.remove('zipla', 'salla'); void e.offsetWidth; e.classList.add(dogru ? 'zipla' : 'salla'); };
+  const uOyun = (ad, ciz) => (kok, ctx) => G.karakterSec(kok, ctx, k => ciz(kok, ctx, k));
+
+  /* Yerleştir: kartı doğru bölgeye sürükle ya da önce karta sonra bölgeye dokun */
+  G.yer = uOyun('yer', (kok, ctx, kar) => {
+    const c = ctx.uo, kartlar = O.karistir(c.o.map((o, i) => ({ en: o[0], e: o[1], b: o[2], i }))); let hata = 0, yerlesen = 0, secili = null;
+    h(kok, `<div class="uo-duzen">${yanPanel(kar)}<div class="uo-ana">
+      <div class="oyun-ust"><b>${esc(c.ikon)} ${esc(c.ad)}</b><span><button class="btn kucuk" data-y>🔊</button> ✓ <b data-say>0</b>/${kartlar.length}</span></div>
+      <p class="yonerge kucuk-yon">${esc(c.y)}</p>
+      <div class="yer-kartlar">${kartlar.map(k => `<button class="yer-kart" data-i="${k.i}"><span class="emo">${k.e}</span><b>${esc(k.en)}</b></button>`).join('')}</div>
+      <div class="yer-bolgeler n${c.b.length}">${c.b.map((b, j) => `<div class="yer-bolge" data-b="${j}"><div class="yb-bas"><span class="emo">${b[1]}</span> ${esc(b[0])}</div><div class="yb-ic"></div></div>`).join('')}</div></div></div>`);
+    const soyleY = () => O.soyle(c.y); kok.querySelector('[data-y]').onclick = soyleY; sonra(soyleY, 300);
+    const birak = (kartEl, bolgeEl) => {
+      const o = c.o[+kartEl.dataset.i], bj = +bolgeEl.dataset.b;
+      if (o[2] === bj) { O.bip('dogru'); tepki(kok, true); kartEl.classList.add('yerlesti'); kartEl.disabled = true; bolgeEl.querySelector('.yb-ic').appendChild(kartEl); yerlesen++;
+        kok.querySelector('[data-say]').textContent = yerlesen; O.soyle(c.k.replace('{k}', o[0]).replace('{b}', c.b[bj][0]));
+        if (yerlesen === kartlar.length) sonra(() => bitir(kok, ctx, { t: 'yer', p: Math.max(0, kartlar.length - hata), m: kartlar.length }, `${kar.e} All done!`), 2200); }
+      else { hata++; O.bip('yanlis'); tepki(kok, false); kartEl.classList.add('salla'); bolgeEl.classList.add('yanlis-b'); sonra(() => { kartEl.classList.remove('salla'); bolgeEl.classList.remove('yanlis-b'); }, 500); }
+      secili = null; kok.querySelectorAll('.yer-kart.secili').forEach(x => x.classList.remove('secili'));
+    };
+    kok.querySelectorAll('.yer-kart').forEach(kEl => {
+      kEl.onpointerdown = e => { if (kEl.disabled) return; const r = kEl.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top; let surukle = false; const x0 = e.clientX, y0 = e.clientY;
+        kEl.setPointerCapture(e.pointerId);
+        kEl.onpointermove = m => { if (!surukle && Math.hypot(m.clientX - x0, m.clientY - y0) < 8) return; surukle = true; kEl.classList.add('suruk');
+          kEl.style.transform = `translate(${m.clientX - x0}px, ${m.clientY - y0}px)`; };
+        kEl.onpointerup = u => { kEl.onpointermove = kEl.onpointerup = null; kEl.style.transform = ''; kEl.classList.remove('suruk');
+          if (surukle) { kEl.style.visibility = 'hidden'; const alt = document.elementFromPoint(u.clientX, u.clientY); kEl.style.visibility = ''; const b = alt && alt.closest('.yer-bolge'); if (b) birak(kEl, b); }
+          else { O.soyle(c.o[+kEl.dataset.i][0]); kok.querySelectorAll('.yer-kart.secili').forEach(x => x.classList.remove('secili')); secili = kEl; kEl.classList.add('secili'); } };
+        void dx; void dy; };
+    });
+    kok.querySelectorAll('.yer-bolge').forEach(b => b.onclick = () => { if (secili) birak(secili, b); });
+  });
+
+  /* Sırala: adımlara doğru sırayla dokun */
+  G.sira = uOyun('sira', (kok, ctx, kar) => {
+    const c = ctx.uo; let di = 0, hata = 0, toplam = 0;
+    const dizi = () => {
+      const d = c.d[di]; let sira = 0; const kar_ = O.karistir(d.map((a, i) => ({ a, i })));
+      h(kok, `<div class="uo-duzen">${yanPanel(kar)}<div class="uo-ana">
+        <div class="oyun-ust"><b>${esc(c.ikon)} ${esc(c.ad)}</b><span>${c.d.length > 1 ? `${di + 1}/${c.d.length} · ` : ''}<button class="btn kucuk" data-y>🔊</button></span></div>
+        <p class="yonerge kucuk-yon">${esc(c.y)}</p>
+        <ol class="sira-hedef">${d.map(() => '<li class="bos"></li>').join('')}</ol>
+        <div class="sira-secenek">${kar_.map(x => `<button class="btn sira-adim" data-i="${x.i}"><span class="emo">${x.a[0]}</span> ${esc(x.a[1])}</button>`).join('')}</div></div></div>`);
+      kok.querySelector('[data-y]').onclick = () => O.soyle(c.y);
+      kok.querySelectorAll('.sira-adim').forEach(b => b.onclick = () => {
+        if (+b.dataset.i === sira) { O.bip('dogru'); tepki(kok, true); const li = kok.querySelectorAll('.sira-hedef li')[sira]; li.className = 'dolu'; li.innerHTML = b.innerHTML; b.remove(); O.soyle(d[sira][1]); sira++; toplam++;
+          if (sira === d.length) sonra(() => { di++; if (di < c.d.length) dizi(); else bitir(kok, ctx, { t: 'sira', p: Math.max(0, toplam - hata), m: toplam }, `${kar.e} Perfect order!`); }, 2400); }
+        else { hata++; O.bip('yanlis'); tepki(kok, false); b.classList.add('salla'); sonra(() => b.classList.remove('salla'), 450); }
+      });
+    };
+    dizi();
+  });
+
+  /* Bilmece / Dinle-dokun */
+  G.bil = uOyun('bil', (kok, ctx, kar) => {
+    const c = ctx.uo, sorular = O.karistir(c.q.slice()); let i = 0, puan = 0, deneme = 0;
+    const soru = () => {
+      if (i >= sorular.length) return bitir(kok, ctx, { t: 'bil', p: puan, m: sorular.length }, `${kar.e} Riddle master!`);
+      const [ipucu, cevap, e] = sorular[i]; deneme = 0; G._soru = { cevap };
+      const sec = O.karistir([sorular[i]].concat(O.sec(c.q.filter(x => x[1] !== cevap), 3)));
+      h(kok, `<div class="uo-duzen">${yanPanel(kar)}<div class="uo-ana">
+        <div class="oyun-ust"><b>${esc(c.ikon)} ${esc(c.ad)}</b><span>${i + 1}/${sorular.length} · ✓ ${puan}</span></div>
+        <div class="bil-ipucu">${c.ses ? '<span class="dinle-ikon">👂</span><span class="soluk">Dinle ve doğru resme dokun!</span>' : `<p>${esc(ipucu)}</p>`}<button class="btn" data-tekrar>🔊 Tekrar dinle</button></div>
+        <div class="bil-secenek">${sec.map(s => `<button class="bil-s" data-c="${esc(s[1])}"><span class="emo">${s[2]}</span><b>${esc(s[1])}</b></button>`).join('')}</div></div></div>`);
+      O.soyle(ipucu); kok.querySelector('[data-tekrar]').onclick = () => O.soyle(ipucu);
+      kok.querySelectorAll('.bil-s').forEach(b => b.onclick = () => {
+        if (b.dataset.c === cevap) { if (!deneme) puan++; O.bip('dogru'); tepki(kok, true); b.classList.add('dogru-s'); O.soyle(cevap); kok.querySelectorAll('.bil-s').forEach(x => x.disabled = true); sonra(() => { i++; soru(); }, 1500); }
+        else { deneme++; O.bip('yanlis'); tepki(kok, false); b.classList.add('yanlis'); b.disabled = true; }
+      });
+    };
+    soru();
+  });
+  G.UTUR = { yer: { ad: 'Yerleştir', ikon: '🧲', aciklama: 'Sürükle ya da dokun: doğru yere yerleştir' }, sira: { ad: 'Sırala', ikon: '🔢', aciklama: 'Adımları doğru sıraya koy' }, bil: { ad: 'Bilmece', ikon: '🕵️', aciklama: 'İpucunu oku/dinle, doğru resmi bul' } };
+
   G.LISTE = [
     { id: 'konusma', ad: 'Konuşma Sınavı Provası', ikon: '🎙️', aciklama: 'Sesli sorular, 30 sn cevap, otomatik puanlama anahtarı', tahta: 1, tel: 1 },
     { id: 'kart', ad: 'Kelime Kartları', ikon: '🃏', aciklama: 'Resim, kelime, Türkçe; sesli okuma', tahta: 1, tel: 1, ogretim: 1 },

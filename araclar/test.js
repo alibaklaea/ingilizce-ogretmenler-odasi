@@ -26,6 +26,32 @@ let gecti = 0, kaldi = 0; const ok = (k, m) => { if (k) gecti++; else { kaldi++;
   await p.evaluate(() => location.hash = 'siniflar'); await p.waitForTimeout(100);
   await p.selectOption('[data-sinifekle] [name=s]', '5'); await p.fill('[data-sinifekle] [name=ogr]', 'Ali Y.\nAyşe K.\nMert T.'); await p.click('[data-sinifekle] .ana'); await p.waitForTimeout(150);
   const kod = await p.evaluate(() => JSON.parse(localStorage.getItem('ing.siniflar'))[0].kod); ok(/^5A-\d{4}$/.test(kod), 'sınıf kodu: ' + kod);
+  // hafta kartları + hafta çubuğu
+  await p.evaluate(() => location.hash = 'haftalar'); await p.waitForTimeout(150);
+  ok(await p.evaluate(() => document.querySelectorAll('.hafta-kart').length === 37 && !!document.querySelector('.hafta-kart.simdi')), 'hafta kartları eksik');
+  await p.click('.hafta-kart[data-hsec="20"]'); await p.waitForTimeout(200);
+  ok(await p.evaluate(() => location.hash === '#bugun' && document.querySelector('.etiket').textContent.includes('SEÇİLİ') && document.querySelector('[data-hbsec]').value === '20'), 'hafta kartından seçim olmadı');
+  await p.click('[data-hb="1"]'); await p.waitForTimeout(200); ok(await p.evaluate(() => document.querySelector('[data-hbsec]').value === '21'), 'ileri düğmesi');
+  await p.evaluate(() => location.hash = 'gunluk'); await p.waitForTimeout(150); ok(await p.evaluate(() => document.querySelector('[data-hbsec]').value === '21'), 'günlük plan seçili haftayı almadı');
+  await p.click('[data-hbbu]'); await p.waitForTimeout(200); ok(await p.evaluate(() => +document.querySelector('[data-hbsec]').value === ORTAK.buHafta(+JSON.parse(localStorage.getItem('ing.ayar')).sinif)), 'bu hafta düğmesi');
+  // 116 ünite oyunu: her birinde karakter seç + bir doğru hamle
+  const uoHata = [];
+  for (const s of [2, 3, 4, 5, 6, 7, 8]) {
+    await p.click(`[data-s="${s}"]`); await p.waitForTimeout(80);
+    const n = await p.evaluate(s => UOYUN[s].length, s);
+    for (let u = 0; u < n; u++) for (let j = 0; j < 2; j++) {
+      await p.evaluate(x => location.hash = x, `oyna/u${j}/${u}`); await p.waitForTimeout(60);
+      await p.click('[data-baslat]'); await p.waitForTimeout(60); await p.click('.kar[data-k="0"]'); await p.waitForTimeout(60);
+      const t = await p.evaluate(([s, u, j]) => UOYUN[s][u][j].t, [s, u, j]); let basari = false;
+      if (t === 'yer') { const i = await p.evaluate(() => +document.querySelector('.yer-kart').dataset.i); const bj = await p.evaluate(([s, u, j, i]) => UOYUN[s][u][j].o[i][2], [s, u, j, i]);
+        await p.click(`.yer-kart[data-i="${i}"]`); await p.click(`.yer-bolge[data-b="${bj}"]`); await p.waitForTimeout(60); basari = await p.evaluate(() => document.querySelectorAll('.yer-kart.yerlesti').length === 1); }
+      if (t === 'sira') { await p.click('.sira-adim[data-i="0"]'); await p.waitForTimeout(60); basari = await p.evaluate(() => document.querySelectorAll('.sira-hedef li.dolu').length === 1); }
+      if (t === 'bil') { const c = await p.evaluate(() => OYUN._soru.cevap); await p.evaluate(c => [...document.querySelectorAll('.bil-s')].find(b => b.dataset.c === c).click(), c); await p.waitForTimeout(60); basari = await p.evaluate(() => !!document.querySelector('.bil-s.dogru-s')); }
+      if (!basari || p.hatalar.length) uoHata.push(`${s}.${u + 1}.${j}:${t} ${p.hatalar.join('|')}`); p.hatalar = [];
+    }
+  }
+  ok(!uoHata.length, 'ünite oyunları: ' + uoHata.join(', '));
+  await p.evaluate(() => location.hash = 'oyna/u0/4'); await p.waitForTimeout(100);
   await p.click('[data-s="5"]'); await p.waitForTimeout(100);
   // oyunlar (tahta)
   for (const id of ['konusma', 'kart', 'hafiza', 'halat', 'dakika', 'harf', 'cumle', 'sohbet', 'eksik', 'av', 'cark', 'bingo']) {

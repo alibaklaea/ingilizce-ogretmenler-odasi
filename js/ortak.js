@@ -90,7 +90,7 @@
   };
   O.sonuclar = () => O.oku('sonuclar', []);
   O.TURLER = { kart: 'Kelime kartları', hafiza: 'Hafıza', halat: 'Halat çekme düellosu', dakika: '1 Dakika Kelime', harf: 'Harf Avı', cumle: 'Cümle kur',
-    eksik: 'Ne eksik?', av: 'Kelime avı', sohbet: 'Sohbet', hiz: 'Hız düellosu', tekrar: 'Tekrar (aralıklı)', bingo: 'Bingo', cark: 'Çarkıfelek', konusma: 'Konuşma sınavı' };
+    eksik: 'Ne eksik?', av: 'Kelime avı', sohbet: 'Sohbet', hiz: 'Hız düellosu', tekrar: 'Tekrar (aralıklı)', bingo: 'Bingo', cark: 'Çarkıfelek', konusma: 'Konuşma sınavı', yer: 'Ünite oyunu: Yerleştir', sira: 'Ünite oyunu: Sırala', bil: 'Ünite oyunu: Bilmece' };
 
   /* rapor kodu: internet/sunucu yokken öğrenci sonuçlarını WhatsApp vb. ile yollamak için */
   O.raporKodu = (liste) => 'ING1:' + btoa(unescape(encodeURIComponent(JSON.stringify(liste.map(r => [r.o, r.k, r.s, r.u, r.h, r.t, r.p, r.m, r.sn, r.z])))));

@@ -114,6 +114,15 @@ def plan(sinif):
                 fonksiyon=temiz(str(r[c_fn])), cikti=temiz(str(r[c_out] or '')), baglam=temiz(str(r[c_ctx] or '')) if c_ctx else '',
                 olcme=temiz(str(r[c_as] or ''))))
     saat = next(h['saat'] for h in haftalar if h['saat'])
+    TR = dict(zip(['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                  ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık']))
+    for h in haftalar:
+        if not h['saat'] and 'PLANNING' not in h['tema'].upper():
+            h['saat'] = saat  # Excel'de saat birleştirilmiş hücrenin yalnız ilk satırında
+        t = re.sub(r'\s*-\s*', ' - ', h['tarih'])
+        for en, tr in TR.items():
+            t = t.replace(en, tr)
+        h['tarih'] = re.sub(r'(\d+) - (\d+) (\w+)$', r'\1-\2 \3', t)
     return haftalar, [uniteler[k] for k in sorted(uniteler)], int(saat)
 
 # ---------------- Ortak yazılı ----------------

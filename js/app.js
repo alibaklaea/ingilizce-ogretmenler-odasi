@@ -3,6 +3,8 @@
   const O = ORTAK, $ = O.$, $$ = O.$$, esc = O.esc;
   const sayfa = () => $('#sayfa');
   let S = Number(O.ayar('sinif', 5));
+  let H = null; // seçili hafta (null = bu hafta)
+  const HS = () => H == null ? O.buHafta(S) : H;
   const sinifSec = s => { S = s; O.ayarYaz('sinif', s); document.body.dataset.sinif = s; ciz(); };
   const rozet = { claude: '<span class="rozet claude" title="Claude tarafından hazırlanan özgün içerik">✦ Claude</span>', meb: '<span class="rozet meb" title="MEB resmî kaynak">MEB</span>', dis: '<span class="rozet dis">Dış kaynak</span>' };
   const gunAdi = hi => { const h = O.haftalar(S)[hi]; return `${h.no}. hafta · ${h.tarih}`; };
@@ -140,11 +142,13 @@
   const SAYFA = {};
   const baslik = (h, alt, sag) => `<div class="sayfa-bas"><div><h1>${h}</h1>${alt ? `<p class="soluk">${alt}</p>` : ''}</div><div class="sag">${sag || ''}</div></div>`;
   const kelimeIzgara = (ks) => `<div class="kelimeler">${ks.map(k => `<button class="kelime-k" data-soyle="${esc(k.en)}"><span class="emo">${k.e}</span><b>${esc(k.en)}</b><small>${esc(k.tr)}</small></button>`).join('')}</div>`;
+  const uoyunlar = (s, u) => (UOYUN[s] && UOYUN[s][u] || []).map((c, j) => `<a class="uoyun-k" href="#oyna/u${j}/${u}"><span>${c.ikon}</span><div><b>${esc(c.ad)}</b><small>${OYUN.UTUR[c.t].ikon} ${OYUN.UTUR[c.t].ad} · ${OYUN.UTUR[c.t].aciklama}</small></div></a>`).join('');
+  const uoyunKutu = (s, u) => `<div class="kart-kutu"><h2>🎯 Bu ünitenin oyunları ${rozet.claude}</h2><p class="soluk">Üniteye ve yaşa özel; öğrenci kendi karakterini (kız/erkek) seçer.</p><div class="uoyun-izgara">${uoyunlar(s, u)}</div></div>`;
   const sohbetOnizle = (un) => `<div class="sohbet-on">${un.sohbet.map(t => `<p><span>${ARKADAS[un.s].simge}</span> ${esc(t[0])}<br><span>🙂</span> <b>${esc(t[1])}</b></p>`).join('')}</div>`;
 
   SAYFA.bugun = () => {
-    const hi = O.buHafta(S), h = O.haftalar(S)[hi], u = h.u, a = O.asama(S, hi), sn = O.sinif(S);
-    const ust = `<div class="bugun-hero"><div><span class="etiket">${S}. sınıf · ${sn.program} · haftada ${sn.saat} saat</span>
+    const hi = HS(), h = O.haftalar(S)[hi], u = h.u, a = O.asama(S, hi), sn = O.sinif(S), buMu = hi === O.buHafta(S);
+    const ust = `<div class="bugun-hero"><div><span class="etiket">${buMu ? '📍 BU HAFTA · ' : '🗓️ SEÇİLİ HAFTA · '}${S}. sınıf · ${sn.program} · haftada ${sn.saat} saat</span>
       <h1>${u == null ? esc(h.tema) : esc(temaAdi(S, u))}</h1><p>${gunAdi(hi)}${a ? ` · <b>${a.ikon} ${a.ad}</b> aşaması (${a.sira}/${a.toplam}. hafta)` : ''}</p>
       ${h.gun ? `<p class="gun">📅 ${esc(h.gun).replace(/\n+/g, ' · ')}</p>` : ''}</div>
       <div class="hero-dugme"><a class="btn ana" href="#hafta/${hi}">Haftalık plan</a><a class="btn" href="#gunluk/${hi}/0">Günlük plan</a><a class="btn" href="#yillik">Yıllık plan</a></div></div>`;
@@ -157,15 +161,32 @@
       <div class="kart-kutu"><h2>🔤 Bu temanın kelimeleri ${rozet.claude}</h2><p class="soluk">Konuşmada kullanılacak 10 kelime — dokun, dinle.</p>${kelimeIzgara(un.kelimeler)}</div>
       <div class="kart-kutu"><h2>🧩 Cümle kalıbı ${rozet.claude}</h2><p class="kalip buyuk-k">${esc(un.cumle.k)}</p><ul>${un.cumle.o.map(c => `<li><button class="ses-k" data-soyle="${esc(c)}">🔊</button> ${esc(c)}</li>`).join('')}</ul></div>
       </div><div>
+      ${uoyunKutu(S, u)}
       <div class="kart-kutu"><h2>🎮 Tahtada aç</h2><div class="oyun-izgara">${OYUN.LISTE.map(o => `<a class="oyun-k" href="#oyna/${o.id}/${u}"><span>${o.ikon}</span><b>${o.ad}</b><small>${o.aciklama}</small></a>`).join('')}</div></div>
       <div class="kart-kutu"><h2>💬 ${ARKADAS[S].simge} ${ARKADAS[S].ad} ile sohbet ${rozet.claude}</h2><p class="soluk">${ARKADAS[S].yer} · ${ARKADAS[S].yas} yaşında</p>${sohbetOnizle(un)}<a class="btn" href="#oyna/sohbet/${u}">▶ Sohbeti tahtada başlat</a></div>
       ${sinav}</div></div>`;
   };
 
+  const AYTR = ['', 'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const OZEL = t => t.replace('SCHOOL-BASED PLANNING', 'Okul temelli planlama').replace('ORIENTATION', 'Oryantasyon').replace('REVISION', 'Tekrar').replace(/SOCIAL ACTIVIT\w*/, 'Sosyal etkinlik');
+  SAYFA.haftalar = () => {
+    const hs = O.haftalar(S), bu = O.buHafta(S);
+    let html = baslik(`${S}. Sınıf · Haftalar`, `2026-2027 · ${hs.length} hafta · ${O.sinif(S).program} · haftaya dokunun: plan, kelimeler, oyunlar ve günlük plan açılır`, `<a class="btn ana" href="#bugun" data-buhafta>📍 Bu haftaya git</a><a class="btn" href="#yillik">Tablo görünümü</a>`), ay = '';
+    hs.forEach((w, i) => { const ayAd = AYTR[+w.bas.slice(5, 7)];
+      if (ayAd !== ay) { if (ay) html += '</div></section>'; ay = ayAd; html += `<section class="ay-blok"><h2>${ayAd} ${w.bas.slice(0, 4)}</h2><div class="haftalar-izgara">`; }
+      const a = O.asama(S, i), un = w.u != null ? O.unite(S, w.u) : null;
+      html += `<a class="hafta-kart ${i === bu ? 'simdi' : i < bu ? 'gecti' : ''} ${i === H && i !== bu ? 'secili' : ''} ${w.u == null ? 'ozel' : ''}" href="#bugun" data-hsec="${i}">${i === bu ? '<span class="simdi-etiket">BU HAFTA</span>' : ''}
+        <div class="hk-ust"><span class="hk-no">${w.no}. HAFTA</span><span>${esc(w.tarih)} · ${w.saat || '–'} saat</span></div>
+        <div class="hk-ad">${w.u == null ? esc(OZEL(w.tema)) : `${w.u + 1}. ${esc(un.ad)}`}</div>
+        ${a ? `<div class="soluk">${a.ikon} ${a.ad} · ${a.sira}/${a.toplam}. hafta</div>` : ''}${un ? `<div class="hk-emo">${un.kelimeler.slice(0, 6).map(k => k.e).join(' ')}</div>` : ''}
+        ${w.gun ? `<div class="hk-gun">📅 ${esc(w.gun.split('\n')[0].slice(0, 46))}</div>` : ''}</a>`; });
+    return html + '</div></section>';
+  };
+
   SAYFA.yillik = () => {
     const hs = O.haftalar(S), sn = O.sinif(S);
     const tablo = `<table class="plan"><thead><tr><th>Ay</th><th>Hafta</th><th>Saat</th><th>Tema / Ünite</th><th>Aşama ${rozet.claude}</th><th>Belirli gün ve haftalar</th></tr></thead><tbody>
-      ${hs.map((h, i) => { const a = O.asama(S, i); return `<tr class="${h.u == null ? 'ozel' : ''} ${i === O.buHafta(S) ? 'simdi' : ''}"><td>${esc(h.ay)}</td><td><a href="#hafta/${i}">${h.no}. ${esc(h.tarih)}</a></td><td>${h.saat || ''}</td>
+      ${hs.map((h, i) => { const a = O.asama(S, i); return `<tr class="${h.u == null ? 'ozel' : ''} ${i === HS() ? 'simdi' : ''}"><td>${esc(h.ay)}</td><td><a href="#hafta/${i}">${h.no}. ${esc(h.tarih)}</a></td><td>${h.saat || ''}</td>
         <td>${h.u == null ? esc(h.tema) : `<a href="#unite/${h.u}">${esc(temaAdi(S, h.u))}</a>`}</td><td>${a ? `${a.ikon} ${a.ad}` : ''}</td><td class="kucuk-y">${esc(h.gun).replace(/\n+/g, '<br>')}</td></tr>`; }).join('')}</tbody></table>`;
     return baslik(`${S}. Sınıf Yıllık Plan`, `2026-2027 · ${sn.program} · haftada ${sn.saat} ders saati · ${rozet.meb} taslak yıllık çerçeve plan`,
       `<button class="btn" data-bas="yillik">🖨 Yazdır</button><button class="btn" data-word="yillik">⬇ Word</button>`) +
@@ -174,21 +195,22 @@
   };
 
   SAYFA.hafta = (hi) => {
-    hi = hi == null ? O.buHafta(S) : +hi; const hs = O.haftalar(S), h = hs[hi], u = h.u, a = O.asama(S, hi);
+    hi = hi == null ? HS() : +hi; H = hi; const hs = O.haftalar(S), h = hs[hi], u = h.u, a = O.asama(S, hi);
     const gez = `<div class="gezgin"><a class="btn" href="#hafta/${Math.max(0, hi - 1)}">◀ Önceki</a><select data-hafta>${hs.map((x, i) => `<option value="${i}" ${i === hi ? 'selected' : ''}>${x.no}. hafta · ${esc(x.tarih)}</option>`).join('')}</select><a class="btn" href="#hafta/${Math.min(hs.length - 1, hi + 1)}">Sonraki ▶</a></div>`;
     if (u == null) return baslik(`${h.no}. Hafta`, esc(h.tarih)) + gez + `<div class="kart-kutu"><h2>${esc(h.tema)}</h2><p>Tema dersi yok. ${rozet.claude} öneri: tekrar oyunları (1 Dakika Kelime, Halat Çekme), sosyal etkinlik, kulüp/proje çalışması.</p>${h.gun ? `<p>📅 ${esc(h.gun)}</p>` : ''}</div>`;
-    const un = O.unite(S, u), m = un.meb, H = O.sinif(S).saat, son = a.sira === a.toplam;
+    const un = O.unite(S, u), m = un.meb, DS = O.sinif(S).saat, son = a.sira === a.toplam;
     const etk = [
       { ad: 'Kelime kartları + telaffuz', oyun: 'kart', ne: a.no === 0 ? 'İlk 5 kelime; koro, gölge, fısıltı zinciri' : 'Tüm kelimeler; hedef ses çalışması' },
       { ad: ADIM.uygulama[a.no].map(OYUN_AD).join(' / '), oyun: ADIM.uygulama[a.no][0], ne: 'Tahtada takım oyunu; sonuçlar sınıf raporuna kaydedilir' },
       { ad: 'Cümle kalıbı çalışması', oyun: 'cumle', ne: un.cumle.k },
       { ad: `${ARKADAS[S].ad} ile sohbet`, oyun: 'sohbet', ne: 'Sınıfça sesli sohbet, sonra ikili canlandırma' },
       { ad: 'A4 etkinlik kâğıdı', ne: 'Eşleştir, kelime avı, cümle sırala, sohbet, yaz (cevap anahtarlı)', kagit: 1 }];
-    return baslik(`${h.no}. Hafta · ${esc(un.ad)}`, `${esc(h.tarih)} · ${a.ikon} ${a.ad}: ${a.amac} · ${a.sira}/${a.toplam}. hafta · ${H} ders saati`,
+    return baslik(`${h.no}. Hafta · ${esc(un.ad)}`, `${esc(h.tarih)} · ${a.ikon} ${a.ad}: ${a.amac} · ${a.sira}/${a.toplam}. hafta · ${DS} ders saati`,
       `<button class="btn" data-bas="hafta">🖨 Yazdır</button><a class="btn" href="#gunluk/${hi}/0">Günlük planlar →</a>`) + gez + `
       <div id="hafta-govde"><div class="iki-kolon"><div>
         <div class="kart-kutu"><h2>📋 Haftalık etkinlikler ${rozet.claude}</h2><ol class="etkinlik-l">${etk.map(e => `<li><b>${esc(e.ad)}</b><small>${esc(e.ne)}</small>${e.oyun ? `<a class="mini-btn" href="#oyna/${e.oyun}/${u}">▶ Tahtada aç</a>` : ''}${e.kagit ? `<button class="mini-btn" data-kagit="${u}">🖨 Kâğıdı yazdır</button>` : ''}</li>`).join('')}</ol>
           <p class="ogr-odev">📱 <b>Öğrenci uygulaması ödevi:</b> bu haftanın kelime kartları, cümle kurma, ${ARKADAS[S].ad} ile sohbet ve en az bir 1 Dakika düellosu.</p></div>
+        ${uoyunKutu(S, u)}
         <div class="kart-kutu"><h2>🔤 Kelimeler ${rozet.claude}</h2>${kelimeIzgara(un.kelimeler.slice(...a.kelime))}</div>
         <div class="kart-kutu"><h2>🧩 Kalıp</h2><p class="kalip buyuk-k">${esc(un.cumle.k)}</p><ul>${un.cumle.o.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>
       </div><div>
@@ -202,7 +224,7 @@
   };
 
   SAYFA.gunluk = (hi, d) => {
-    hi = hi == null ? O.buHafta(S) : +hi; d = +(d || 0); const p = gunlukPlan(hi, d), hs = O.haftalar(S);
+    hi = hi == null ? HS() : +hi; H = hi; d = +(d || 0); const p = gunlukPlan(hi, d), hs = O.haftalar(S);
     if (!p) return baslik('Günlük plan', '') + `<div class="kart-kutu">Bu hafta tema dersi yok (${esc(hs[hi].tema)}). <a href="#hafta/${hi}">Haftaya dön</a></div>`;
     const un = O.unite(S, p.u), m = un.meb;
     const sekme = Array.from({ length: p.H }, (_, j) => `<a class="sekme ${j === d ? 'aktif' : ''}" href="#gunluk/${hi}/${j}">${j + 1}. ders</a>`).join('');
@@ -234,29 +256,31 @@
       : [['İşlevler ve kullanışlı dil', m.fonksiyon], ['Öğrenme çıktıları', m.cikti], ['Bağlamlar ve görevler', m.baglam], ['Ölçme', m.olcme]];
     return baslik(`${u + 1}. ${esc(un.ad)}`, `${S}. sınıf · ${O.temaHaftalari(S, u).length} hafta`, `<a class="btn" href="#hafta/${O.temaHaftalari(S, u)[0]}">Haftalık plan</a><button class="btn" data-kagit="${u}">🖨 A4 kâğıt</button>`) +
       `<div class="iki-kolon"><div><div class="kart-kutu"><h2>Bizim içerik ${rozet.claude}</h2>${kelimeIzgara(un.kelimeler)}<p class="kalip buyuk-k">${esc(un.cumle.k)}</p><ul>${un.cumle.o.map(c => `<li>${esc(c)}</li>`).join('')}</ul>${sohbetOnizle(un)}</div></div>
-      <div><div class="kart-kutu"><h2>Resmî program ${rozet.meb}</h2>${m.meb ? `<p><a target="_blank" rel="noopener" href="https://tymm.meb.gov.tr/ingilizce-dersi-temel-egitim/unite/${m.meb}">tymm.meb.gov.tr'de aç ↗</a></p>` : ''}
+      <div>${uoyunKutu(S, u)}<div class="kart-kutu"><h2>Resmî program ${rozet.meb}</h2>${m.meb ? `<p><a target="_blank" rel="noopener" href="https://tymm.meb.gov.tr/ingilizce-dersi-temel-egitim/unite/${m.meb}">tymm.meb.gov.tr'de aç ↗</a></p>` : ''}
         ${resmi.filter(x => x[1]).map(x => `<details ${x[0].startsWith('Hedef') || x[0].startsWith('İşlev') ? 'open' : ''}><summary>${x[0]}</summary><pre>${esc(x[1])}</pre></details>`).join('')}
         ${m.fark ? `<details><summary>Farklılaştırma</summary><pre>${esc(m.fark)}</pre></details>` : ''}</div>
       <div class="kart-kutu"><h2>🌐 Dış kaynaklar</h2>${kaynakListe(S, u)}</div></div></div>`;
   };
 
-  SAYFA.tahta = () => { const u = haftaUnite(O.buHafta(S)) ?? 0;
+  SAYFA.tahta = () => { const u = haftaUnite(HS()) ?? 0;
     return baslik('Akıllı Tahta Oyunları', `${S}. sınıf · oyun seçin, sonra ünite`) + `<div class="unite-sec">${O.sinif(S).uniteler.map((m, i) => `<button class="cip ${i === u ? 'aktif' : ''}" data-tu="${i}">${i + 1}. ${esc(m.ad)}</button>`).join('')}</div>
+      <div data-tahta-uo>${uoyunKutu(S, u)}</div>
       <div class="oyun-izgara buyuk" data-tahta-u="${u}">${OYUN.LISTE.filter(o => o.tahta).map(o => `<a class="oyun-k" href="#oyna/${o.id}/${u}"><span>${o.ikon}</span><b>${o.ad}</b><small>${o.aciklama}</small>${o.duello ? '<em>Düello</em>' : ''}</a>`).join('')}</div>`; };
 
   /* oyun oynatma (tahta) */
   SAYFA.oyna = (id, u) => {
-    u = +u; const sinifKod = O.ayar('aktifSinif', ''), sinif = O.siniflar().find(c => c.kod === sinifKod), ogr = sinif ? sinif.ogrenciler : [];
-    const ikili = ['halat', 'hafiza'].includes(id), tekli = ['dakika', 'harf', 'cumle', 'sohbet', 'av', 'konusma'].includes(id);
+    u = Math.min(+u || 0, O.uniteSayisi(S) - 1); const sinifKod = O.ayar('aktifSinif', ''), sinif = O.siniflar().find(c => c.kod === sinifKod), ogr = sinif ? sinif.ogrenciler : [];
+    const uo = /^u\d$/.test(id) ? ((UOYUN[S] || [])[u] || [])[+id.slice(1)] : null, motor = uo ? uo.t : id;
+    const ikili = ['halat', 'hafiza'].includes(id), tekli = ['dakika', 'harf', 'cumle', 'sohbet', 'av', 'konusma'].includes(id) || !!uo;
     setTimeout(() => {
       const kok = $('#oyun-alan'), un = O.unite(S, u);
       const havuz = O.sinif(S).uniteler.flatMap((_, i) => O.unite(S, i).kelimeler);
       const yilHavuz = Array.from({ length: u + 1 }, (_, i) => O.unite(S, i).kelimeler).flat();
       const baslat = () => {
         const a = $('#o1')?.value, b = $('#o2')?.value, tek = $('#o0')?.value, kapsam = $('#kapsam')?.value;
-        OYUN.dur(); OYUN[id](kok, { u: un, kelimeler: un.kelimeler, havuz, dakikaHavuz: kapsam === 'yil' ? yilHavuz : un.kelimeler, mod: 'tahta', oyuncular: ikili ? [a || 'Team A', b || 'Team B'] : null,
+        OYUN.dur(); OYUN[motor](kok, { uo, u: un, kelimeler: un.kelimeler, havuz, dakikaHavuz: kapsam === 'yil' ? yilHavuz : un.kelimeler, mod: 'tahta', oyuncular: ikili ? [a || 'Team A', b || 'Team B'] : null,
           carkAdlari: id === 'cark' && $('#carkmod')?.value === 'ogr' ? O.karistir(ogr).slice(0, 16) : null,
-          kayit: r => { const ortak = { k: sinifKod, s: S, u, h: O.haftalar(S)[O.buHafta(S)].no, t: id, z: Date.now() };
+          kayit: r => { const ortak = { k: sinifKod, s: S, u, h: O.haftalar(S)[HS()].no, t: uo ? uo.t : id, z: Date.now() };
             if (r.takim) r.takim.forEach(([ad, p]) => O.sonucEkle({ ...ortak, o: ad, p, m: r.m, tahta: 1 }));
             else O.sonucEkle({ ...ortak, o: tek || 'Sınıf', p: r.p, m: r.m, sn: r.sn, tahta: 1 });
             return sinif ? `Kaydedildi: ${sinif.ad} raporu` : 'Kaydedildi (Sınıflarım\'dan sınıf seçerseniz öğrenci raporuna işlenir)'; } });
@@ -265,7 +289,7 @@
       if (!ikili && !tekli && id !== 'cark') baslat();
     }, 0);
     const sec = (idx, ph) => ogr.length ? `<select id="o${idx}"><option value="">${ph}</option>${ogr.map(a => `<option>${esc(a)}</option>`).join('')}</select>` : `<input id="o${idx}" placeholder="${ph}">`;
-    const o = OYUN.LISTE.find(x => x.id === id);
+    const o = uo ? { ikon: uo.ikon, ad: uo.ad + ' · ' + OYUN.UTUR[uo.t].ad } : OYUN.LISTE.find(x => x.id === id);
     return `<div class="oyun-sayfa"><div class="oyun-bar"><a class="btn" href="#tahta">✕</a><b>${o.ikon} ${o.ad}</b><span class="soluk">${S}. sınıf · ${esc(temaAdi(S, u))}</span>
       <span class="ayar-alan">${ikili ? sec(1, 'Oyuncu / Takım A') + ' vs ' + sec(2, 'Oyuncu / Takım B') : tekli ? sec(0, 'Öğrenci (isteğe bağlı)') : ''}
       ${['dakika', 'harf'].includes(id) ? '<select id="kapsam"><option value="unite">Bu ünite</option><option value="yil">Yıl başından beri</option></select>' : ''}
@@ -283,7 +307,7 @@
       <div class="iki-kolon"><div class="kart-kutu"><h2>🖨 Hazırlık kâğıdı üret ${rozet.claude}</h2><p>Seçilen ünitelerden kelime (V), okuma-diyalog (R), dil bilgisi/kalıp (G) ve yazma (W) soruları; cevap anahtarlı.${S === 8 ? ' Diyalog tamamlama soruları LGS İngilizce tarzındadır.' : ''}</p>
         <div class="cipler" data-kapsam>${kapsam}</div><button class="btn ana" data-sinavbas>🖨 Kâğıdı yazdır</button></div>
       <div class="kart-kutu vurgu-k"><h2>🎙️ Konuşma sınavı ${rozet.claude}</h2><p>Yabancı arkadaş sınav yapan kişi olur: soruyu sesli sorar, öğrenci 30 saniyede mikrofonla cevaplar, uygulama cevabı yazıya döküp <b>içerik · kelime · kalıp · akıcılık</b> ölçütleriyle puanlar. Sonuç öğrencinin raporuna düşer.</p>
-        <div class="satir"><a class="btn ana" href="#oyna/konusma/${haftaUnite(O.buHafta(S)) ?? 0}">▶ Tahtada provayı başlat</a><button class="btn" data-konusmabas>🖨 Soru kartları + puanlama formu</button></div>
+        <div class="satir"><a class="btn ana" href="#oyna/konusma/${haftaUnite(HS()) ?? 0}">▶ Tahtada provayı başlat</a><button class="btn" data-konusmabas>🖨 Soru kartları + puanlama formu</button></div>
         <p class="soluk">Formdaki öğrenci listesi “Sınıflarım”daki aktif sınıftan gelir. Öğrenciler evde aynı provayı öğrenci uygulamasından yapar.</p></div>
       <div class="kart-kutu"><h2>ℹ️ Bilinmesi gerekenler</h2><ul>
         <li>2026-27'de İngilizce ortak yazılı: <b>5, 6, 7. sınıf</b> (okul geneli). Zümre, MEB tablosundaki 5 senaryodan birini seçer.</li>
@@ -326,7 +350,7 @@
         <div class="dugmeler"><button class="btn" data-aktifyap="${c.kod}">${O.ayar('aktifSinif') === c.kod ? '✅ Aktif (tahta)' : 'Tahtada aktif yap'}</button><button class="btn" data-duzenle="${j}">✏️ Öğrenciler</button><button class="btn kirmizi" data-sinifsil="${j}">Sil</button></div></div>`).join('') || '<div class="kart-kutu">Henüz sınıf yok.</div>'}</div></div>`;
   };
 
-  SAYFA.kaynaklar = () => { const u = haftaUnite(O.buHafta(S)) ?? 0;
+  SAYFA.kaynaklar = () => { const u = haftaUnite(HS()) ?? 0;
     return baslik('Kaynaklar', `${S}. sınıf · ünite seçin`) + `<div class="unite-sec">${O.sinif(S).uniteler.map((m, i) => `<a class="cip ${i === u ? 'aktif' : ''}" href="#unite/${i}">${i + 1}. ${esc(m.ad)}</a>`).join('')}</div>
       <div class="kart-kutu"><h2>${esc(temaAdi(S, u))} · ücretsiz platformlar ${rozet.dis}</h2>${kaynakListe(S, u)}</div>
       <div class="kart-kutu"><h2>Etiketler</h2><p>${rozet.claude} Claude'un hazırladığı özgün içerik (kelime listeleri, kalıp, sohbet, oyunlar, A4 kâğıtlar, planlar) · ${rozet.meb} MEB resmî program ve plan · ${rozet.dis} başka sitelerdeki içerik (bağlantı)</p></div>`; };
@@ -343,22 +367,38 @@
       <div class="kart-kutu"><h2>Yedek</h2><button class="btn" data-yedek>⬇ Tüm verileri indir</button> <label class="btn">⬆ Yedeği yükle<input type="file" accept=".json" data-yukle hidden></label></div>`;
 
   /* ---------- yönlendirme ---------- */
-  const MENU = [['bugun', 'Bugün'], ['yillik', 'Yıllık Plan'], ['hafta', 'Haftalık'], ['gunluk', 'Günlük Plan'], ['uniteler', 'Üniteler'], ['tahta', 'Tahta Oyunları'], ['sinav', 'Sınav Hazırlık'], ['raporlar', 'Raporlar'], ['siniflar', 'Sınıflarım'], ['kaynaklar', 'Kaynaklar'], ['analiz', 'Analiz'], ['ayarlar', '⚙']];
+  const MENU = [['haftalar', 'Haftalar'], ['bugun', 'Bu Hafta'], ['hafta', 'Haftalık Plan'], ['gunluk', 'Günlük Plan'], ['yillik', 'Yıllık Tablo'], ['uniteler', 'Üniteler'], ['tahta', 'Tahta Oyunları'], ['sinav', 'Sınav Hazırlık'], ['raporlar', 'Raporlar'], ['siniflar', 'Sınıflarım'], ['kaynaklar', 'Kaynaklar'], ['analiz', 'Analiz'], ['ayarlar', '⚙']];
   function ciz() {
     OYUN.dur();
-    const [ad, ...arg] = (location.hash.slice(1) || 'bugun').split('/');
-    const f = SAYFA[ad] || SAYFA.bugun;
+    const [ad, ...arg] = (location.hash.slice(1) || 'haftalar').split('/');
+    const f = SAYFA[ad] || SAYFA.haftalar;
     $('#sinif-sec').innerHTML = O.SINIFLAR.map(s => `<button data-s="${s}" aria-selected="${s === S}">${s}</button>`).join('');
     $('#menu').innerHTML = MENU.map(([k, a]) => `<a href="#${k}" class="${k === ad ? 'aktif' : ''}">${a}</a>`).join('');
     document.body.classList.toggle('oyun-modu', ad === 'oyna');
-    sayfa().innerHTML = f(...arg); bagla(ad); window.scrollTo(0, 0);
+    sayfa().innerHTML = f(...arg); haftaBar(ad); bagla(ad); window.scrollTo(0, 0);
+  }
+  function haftaBar(ad) {
+    const el = $('#hafta-bar'); if (!el) return; el.style.top = $('.ust').offsetHeight + 'px'; const gizli = ['oyna', 'analiz', 'ayarlar', 'siniflar', 'raporlar'].includes(ad); el.hidden = gizli; if (gizli) return;
+    const hs = O.haftalar(S), hi = HS(), bu = O.buHafta(S), w = hs[hi];
+    el.innerHTML = `<button class="btn" data-hb="-1" ${hi === 0 ? 'disabled' : ''}>◀</button>
+      <select data-hbsec>${hs.map((x, i) => `<option value="${i}" ${i === hi ? 'selected' : ''}>${x.no}. hafta · ${esc(x.tarih)} · ${x.u == null ? esc(OZEL(x.tema)) : esc(temaAdi(S, x.u))}${i === bu ? '  (bu hafta)' : ''}</option>`).join('')}</select>
+      <button class="btn" data-hb="1" ${hi === hs.length - 1 ? 'disabled' : ''}>▶</button>
+      <button class="btn ${hi === bu ? 'bu' : ''}" data-hbbu>📍 Bu hafta</button>
+      <span class="hb-bilgi">${hi === bu ? 'Bu haftadasınız' : `Seçili: ${w.no}. hafta`} · ${S}. sınıf</span>`;
+    const git = i => { H = Math.max(0, Math.min(hs.length - 1, i)); const yer = ad === 'hafta' ? `hafta/${H}` : ad === 'gunluk' ? `gunluk/${H}/0` : ['haftalar', 'yillik'].includes(ad) ? 'bugun' : ad;
+      if (location.hash.slice(1) === yer) ciz(); else location.hash = yer; };
+    el.querySelectorAll('[data-hb]').forEach(b => b.onclick = () => git(hi + Number(b.dataset.hb)));
+    el.querySelector('[data-hbsec]').onchange = e => git(+e.target.value);
+    el.querySelector('[data-hbbu]').onclick = () => git(bu);
   }
   function bagla(ad) {
+    $$('[data-hsec]').forEach(a => a.onclick = () => { H = +a.dataset.hsec; });
+    $$('[data-buhafta]').forEach(a => a.onclick = () => { H = null; });
     $$('[data-s]').forEach(b => b.onclick = () => sinifSec(+b.dataset.s));
     $$('[data-soyle]').forEach(b => b.onclick = () => O.soyle(b.dataset.soyle));
     $$('[data-hafta]').forEach(s => s.onchange = () => location.hash = 'hafta/' + s.value);
     $$('[data-kagit]').forEach(b => b.onclick = () => bas(kagitHTML(S, +b.dataset.kagit, Date.now() % 1000), 'Etkinlik kağıdı'));
-    $$('[data-tu]').forEach(b => b.onclick = () => { const u = b.dataset.tu; $$('[data-tu]').forEach(x => x.classList.toggle('aktif', x === b)); $$('.oyun-izgara.buyuk a').forEach(a => a.href = a.href.replace(/\/\d+$/, '/' + u)); });
+    $$('[data-tu]').forEach(b => b.onclick = () => { const u = b.dataset.tu; $$('[data-tu]').forEach(x => x.classList.toggle('aktif', x === b)); $$('.oyun-izgara.buyuk a').forEach(a => a.href = a.href.replace(/\/\d+$/, '/' + u)); const d = $('[data-tahta-uo]'); if (d) d.innerHTML = uoyunKutu(S, +u); });
     $$('[data-bas]').forEach(b => b.onclick = () => { const id = { yillik: 'yillik-tablo', hafta: 'hafta-govde', gunluk: 'gunluk-govde', rapor: 'rapor-govde' }[b.dataset.bas]; bas(`<section class="a4 genis"><h2>${esc($('h1').textContent)}</h2>${$('#' + id).innerHTML}</section>`); });
     $$('[data-word]').forEach(b => b.onclick = () => { const id = { yillik: 'yillik-tablo', gunluk: 'gunluk-govde' }[b.dataset.word]; wordIndir(`<h2>${esc($('h1').textContent)}</h2>` + $('#' + id).innerHTML, $('h1').textContent.replace(/[^\wğüşıöçĞÜŞİÖÇ ]/g, '')); });
     $$('[data-tam]').forEach(b => b.onclick = () => document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.());

@@ -26,4 +26,21 @@ for (let s = 2; s <= 8; s++) {
   hs.forEach(h => { if (h.u != null && !us[h.u]) H(`${s}: hafta ${h.no} ünite ${h.u} yok`); });
   us.forEach((_, i) => { if (!hs.some(h => h.u === i)) H(`${s}: ${i + 1}. üniteye hafta ayrılmamış`); });
 }
+// ünite oyunları
+['js/unite-oyun-ilkokul.js', 'js/unite-oyun-orta.js'].forEach(f => vm.runInContext(fs.readFileSync(path.join(kok, f), 'utf8'), ctx));
+let uo = 0;
+for (let s = 2; s <= 8; s++) {
+  const L = ctx.UOYUN[s] || []; if (L.length !== MEB.sinif[s].uniteler.length) H(`${s}. sınıf: ünite oyunu ${L.length}, ünite ${MEB.sinif[s].uniteler.length}`);
+  L.forEach((oy, i) => { const ad = `${s}.${i + 1} oyun`; if (oy.length < 2) H(`${ad}: ${oy.length} oyun (2 olmalı)`);
+    oy.forEach(c => { uo++; const n = `${ad} "${c.ad}"`; if (!c.ad || !c.ikon) H(`${n}: ad/ikon yok`);
+      const tek = (a, t) => a.filter((x, j) => a.indexOf(x) !== j).forEach(x => H(`${n}: tekrar eden ${t} "${x}"`));
+      if (c.t === 'yer') { if (c.b.length < 2 || c.b.length > 4) H(`${n}: ${c.b.length} bölge`); if (c.o.length < 4) H(`${n}: az kart`);
+        c.o.forEach(o => { if (!(o[2] >= 0 && o[2] < c.b.length)) H(`${n}: "${o[0]}" bölgesi yok`); });
+        c.b.forEach((_, j) => { if (!c.o.some(o => o[2] === j)) H(`${n}: ${c.b[j][0]} bölgesi boş`); });
+        tek(c.o.map(o => o[1]), 'kart simgesi'); tek(c.o.map(o => o[0]), 'kart'); if (!/\{k\}|\{b\}/.test(c.k)) H(`${n}: kalıp yok`); }
+      else if (c.t === 'sira') { c.d.forEach(d => { if (d.length < 3) H(`${n}: dizi çok kısa`); tek(d.map(x => x[1]), 'adım'); }); }
+      else if (c.t === 'bil') { if (c.q.length < 4) H(`${n}: ${c.q.length} soru`); tek(c.q.map(q => q[1]), 'cevap'); tek(c.q.map(q => q[2]), 'simge'); c.q.forEach(q => { if (q.length !== 3 || q.some(x => !x)) H(`${n}: bozuk soru`); }); }
+      else H(`${n}: bilinmeyen tür ${c.t}`); }); });
+}
+console.log(`${uo} ünite oyunu denetlendi`);
 console.log(`\n${top} ünite denetlendi · ${hata} hata · ${uyari} uyarı`); process.exit(hata ? 1 : 0);

@@ -23,6 +23,9 @@
     f.onsubmit = e => { e.preventDefault(); P = { kod: f.kod.value.trim().toUpperCase(), ad: f.ad.value.trim(), s: +f.s.value }; O.yaz('profil', P); ana(); };
   };
 
+  const uoBolum = (u, bh) => { const l = (UOYUN[P.s] || [])[u] || []; if (!l.length) return '';
+    return `<h3>🎯 Bu ünitenin oyunları</h3><div class="gorevler">${l.map((c, j) => { const ok = (bh || []).some(r => r.t === c.t);
+      return `<button class="gorev ${ok ? 'tamam' : ''}" data-oyun="u${j}"><span>${c.ikon}</span><b>${c.ad}<small style="display:block;font-weight:400;color:#5b6478">${OYUN.UTUR[c.t].ad}</small></b><em>${ok ? '✓' : '›'}</em></button>`; }).join('')}</div>`; };
   const ana = () => {
     document.body.dataset.sinif = P.s; $('#geri').hidden = true; $('#ogr-baslik').textContent = `Hi, ${P.ad.split(' ')[0]}!`;
     const u = buUnite(), un = O.unite(P.s, u), ark = ARKADAS[P.s], bh = benim().filter(r => r.h === haftaNo() && r.u === u);
@@ -33,6 +36,7 @@
     kok().innerHTML = `<section class="ogr-hero"><span class="ark">${ark.simge}</span><div><small>${haftaNo()}. hafta · ${P.s}. sınıf</small><h2>${esc(un.ad)}</h2>
         <div class="ilerleme"><i style="width:${tamam / GOREV.length * 100}%"></i></div><small>${tamam}/${GOREV.length} görev tamam</small></div></section>
       <h3>Bu haftanın görevleri</h3><div class="gorevler">${GOREV.map(([t, i, a]) => `<button class="gorev ${yapildi(t) ? 'tamam' : ''}" data-oyun="${t}"><span>${i}</span><b>${a}</b><em>${yapildi(t) ? '✓' : '›'}</em></button>`).join('')}</div>
+      ${uoBolum(u, bh)}
       ${tekrarlar.length ? `<button class="gorev tekrar" data-tekrar><span>🔁</span><b>Tekrar zamanı: ${tekrarlar.length} kelime</b><em>›</em></button>` : ''}
       <h3>⚔️ Düellolar</h3><div class="duellolar">
         <button class="duello" data-oyun="dakika" data-kapsam="yil"><span>⏱️</span><b>1 Dakika</b><small>Rekorun: ${rekor('dakika')}</small></button>
@@ -53,19 +57,20 @@
   const uniteSayfa = (u) => {
     aktifU = u; const un = O.unite(P.s, u); $('#geri').hidden = false; $('#ogr-baslik').textContent = un.ad;
     kok().innerHTML = `<div class="kelimeler">${un.kelimeler.map(k => `<button class="kelime-k" data-soyle="${esc(k.en)}"><span class="emo">${k.e}</span><b>${esc(k.en)}</b><small>${esc(k.tr)}</small></button>`).join('')}</div>
-      <p class="kalip">🧩 ${esc(un.cumle.k)}</p><div class="gorevler">${GOREV.map(([t, i, a]) => `<button class="gorev" data-oyun="${t}"><span>${i}</span><b>${a}</b><em>›</em></button>`).join('')}</div>`;
+      <p class="kalip">🧩 ${esc(un.cumle.k)}</p>${uoBolum(u)}<div class="gorevler">${GOREV.map(([t, i, a]) => `<button class="gorev" data-oyun="${t}"><span>${i}</span><b>${a}</b><em>›</em></button>`).join('')}</div>`;
     $$('[data-soyle]').forEach(b => b.onclick = () => O.soyle(b.dataset.soyle));
     $$('[data-oyun]').forEach(b => b.onclick = () => oyna(b.dataset.oyun, u));
   };
 
   const oyna = (id, u, kapsam, ozelKelimeler) => {
     const un = O.unite(P.s, u), havuz = O.sinif(P.s).uniteler.flatMap((_, i) => O.unite(P.s, i).kelimeler);
-    $('#geri').hidden = false; $('#ogr-baslik').textContent = (OYUN.LISTE.find(o => o.id === id) || {}).ad || '';
+    const uo = /^u\d$/.test(id) ? ((UOYUN[P.s] || [])[u] || [])[+id.slice(1)] : null, motor = uo ? uo.t : id;
+    $('#geri').hidden = false; $('#ogr-baslik').textContent = uo ? uo.ad : (OYUN.LISTE.find(o => o.id === id) || {}).ad || '';
     kok().innerHTML = '<div class="oyun-alan tel" id="oa"></div>';
     OYUN.dur();
-    OYUN[id]($('#oa'), { u: un, kelimeler: ozelKelimeler || un.kelimeler, havuz, mod: 'tel', oyuncular: id === 'halat' ? ['Player 1', 'Player 2'] : null,
+    OYUN[motor]($('#oa'), { uo, karakter: null, u: un, kelimeler: ozelKelimeler || un.kelimeler, havuz, mod: 'tel', oyuncular: id === 'halat' ? ['Player 1', 'Player 2'] : null,
       dakikaHavuz: kapsam === 'yil' ? Array.from({ length: buUnite() + 1 }, (_, i) => O.unite(P.s, i).kelimeler).flat() : un.kelimeler,
-      kayit: r => { if (id === 'halat') return ''; O.sonucEkle({ o: P.ad, k: P.kod, s: P.s, u, h: haftaNo(), t: ozelKelimeler ? 'tekrar' : id, p: r.p, m: r.m, sn: r.sn });
+      kayit: r => { if (id === 'halat') return ''; O.sonucEkle({ o: P.ad, k: P.kod, s: P.s, u, h: haftaNo(), t: ozelKelimeler ? 'tekrar' : uo ? uo.t : id, p: r.p, m: r.m, sn: r.sn });
         return O.sunucu() ? '✅ Öğretmenine gönderildi' : '✅ Kaydedildi'; } });
   };
 
