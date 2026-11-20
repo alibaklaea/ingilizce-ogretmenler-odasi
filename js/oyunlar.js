@@ -97,7 +97,7 @@
   G.dakika = (kok, ctx) => {
     let kalan = 60, dogru = 0, yanlis = 0, k; const havuz = ctx.dakikaHavuz || ctx.kelimeler;
     const ciz = () => {
-      k = O.sec(havuz, 1)[0]; const tip = Math.random() < .5;
+      k = O.sec(havuz, 1)[0]; const tip = Math.random() < .5; G._soru = { k };
       kok.querySelector('.dk-soru').innerHTML = `<div class="ipucu">${tip ? `<span class="emo">${k.e}</span>` : `<span class="tr">${esc(k.tr)}</span>`}</div>
         <div class="secim d4">${secenekler(k, { havuz: ctx.havuz.concat(havuz) }, 4).map(s => `<button class="btn sec" data-en="${esc(s.en)}">${esc(s.en)}</button>`).join('')}</div>`;
       kok.querySelectorAll('.sec').forEach(b => b.onclick = () => { if (b.dataset.en === k.en) { dogru++; O.bip('dogru'); O.leitnerYaz(k.en, true); } else { yanlis++; O.bip('yanlis'); O.leitnerYaz(k.en, false); }

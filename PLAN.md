@@ -28,7 +28,8 @@ Açmak: `index.html` (öğretmen/tahta) ve `ogrenci.html` (öğrenci) — çift 
 | Haftalık plan | ✅ | 5 etkinlik, çıktılar, performans görevi, farklılaştırma, dış kaynaklar |
 | Günlük plan (ders saati kadar, 40 dk) | ✅ | MEB tablo biçimi, düzenlenebilir, Word |
 | Ünite ayrıntısı (MEB resmî + Claude) | ✅ | |
-| 11 tahta oyunu + düellolar | ✅ | kayıt Raporlar'a düşer |
+| 12 tahta oyunu + düellolar | ✅ | kayıt Raporlar'a düşer |
+| Konuşma sınavı provası (sesli soru, 30 sn, yazıya dökme, 4 ölçütlü puan) | ✅ | Chrome/Edge mikrofon; yoksa öğretmen puanı. Soru kartları + puanlama formu baskısı |
 | A4 etkinlik kâğıdı (cevaplı) | ✅ | her ünite, her basışta farklı |
 | Sınav hazırlık kâğıdı (V/R/G/W, LGS diyalog) | ✅ | OYSS dağılım tablosu |
 | Sınıflarım (kod) + Raporlar + CSV | ✅ | rapor kodu içe aktarma |
@@ -40,7 +41,7 @@ Açmak: `index.html` (öğretmen/tahta) ve `ogrenci.html` (öğrenci) — çift 
 ## 3. Öğrenci uygulaması
 
 - Giriş: sınıf kodu (`5A-4821`) + ad (sunucu varsa listeden).
-- Haftanın 6 görevi (kart, cümle, sohbet, 1 dakika, harf avı, kelime avı), ilerleme çubuğu.
+- Haftanın 7 görevi (kart, cümle, sohbet, 1 dakika, harf avı, kelime avı, konuşma sınavı provası), ilerleme çubuğu.
 - Aralıklı tekrar (Leitner 5 kutu: 1-2-4-8-16 gün).
 - Düellolar: 1 Dakika (yıl boyu kelimeler), Harf Avı, **Yüz yüze** (tek telefonda iki kişi, üst yarı ters).
 - Rapor: sunucu varsa otomatik; yoksa `ING1:` kodu → öğretmen yapıştırır.
@@ -58,3 +59,7 @@ Açmak: `index.html` (öğretmen/tahta) ve `ogrenci.html` (öğrenci) — çift 
 - İçerik: `js/icerik-ilkokul.js`, `js/icerik-56.js`, `js/icerik-78.js` (her ünite: k ≤10 kelime `en|tr|simge`, c kalıp + 5 örnek, s 4 sohbet adımı `[arkadaş, doğru, yanlış, yanlış]`).
 - Her değişiklikten sonra: `node araclar/denetle.js` (içerik) ve `node araclar/test.js` (149 tarayıcı kontrolü).
 - Oyun eklemek: `js/oyunlar.js` → `G.yeni = (kok, ctx) => …` + `G.LISTE`'ye satır.
+
+## Yayın ve tanıtım
+- Site: https://alibaklaea.github.io/ingilizce-ogretmenler-odasi/ (repo alibaklaea/ingilizce-ogretmenler-odasi; güncelleme = commit + push).
+- Tanıtım videosu: 04_Videolar/kure-ajan-animasyon → `node out/ingilizce-kayit.js` (gerçek kullanım kaydı) + `python out/ingilizce-ses.py` + Remotion `IngilizceTanitim`.

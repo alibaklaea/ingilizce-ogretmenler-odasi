@@ -18,7 +18,7 @@ ICERIK[7] = [
         ['I go jogging every morning. What about you?', 'I sometimes go jogging at weekends.', 'I never always usually.', 'I like than.'],
         ['Who is your favourite athlete?', 'Zehra Güneş! She is a champion.', 'Once a week jogging.', 'My team is shy.']] },
   { // 3 Biographies
-    k: ['was born|doğdu|👶', 'grow up|büyümek|🌱', 'move to|taşınmak|🚚', 'study|okumak (eğitim)|🎓', 'become|olmak (dönüşmek)|⭐', 'win|kazanmak|🏅', 'die|ölmek|🕯️', 'famous|ünlü|🌟', 'scientist|bilim insanı|🔬', 'when|ne zaman|📅'],
+    k: ['was born|doğdu|👶', 'grow up|büyümek|🌱', 'move to|taşınmak|🚚', 'study|okumak (eğitim)|🎓', 'become|olmak (dönüşmek)|⭐', 'win|kazanmak|🏅', 'live|yaşamak|🏡', 'famous|ünlü|🌟', 'scientist|bilim insanı|🔬', 'when|ne zaman|📅'],
     c: { k: 'He / She was born in ___ in ___.', o: ['Atatürk was born in Thessaloniki in 1881.', 'She moved to Ankara to study medicine.', 'When did he win the Nobel Prize?', 'Aziz Sancar became a famous scientist.', 'She grew up in a small village.'] },
     s: [['Who is a famous Turkish person?', 'Aziz Sancar. He is a famous scientist.', 'Once a week. He is a champion.', 'He was born shy.'],
         ['When was he born?', 'He was born in 1946 in Mardin.', 'He was born a Nobel.', 'He moves to always.'],
